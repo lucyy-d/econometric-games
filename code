@@ -73,7 +73,110 @@ vif(lm(
 ))
 
 #model 2
+# Packages
+library(readxl)
+library(dplyr)
+library(MASS)
 
+# Data
+data <- X2013_ITALY_DATA
+
+# Cleaning variables
+
+# PW090 – Happiness
+data$PW090[data$PW090 == 99] <- NA
+
+data$PW090_ord <- factor(
+  data$PW090,
+  levels = 0:10,
+  labels = c(
+    "Not_at_all_satisfied",
+    "1","2","3","4","5","6","7","8","9",
+    "Completely_satisfied"
+  ),
+  ordered = TRUE
+)
+
+# PW100 – Job satisfaction
+data$PW100[data$PW100 %in% c(-1, 9, 99)] <- NA
+data$PW100 <- as.numeric(data$PW100)
+
+# PW160 – Personal relationships
+data$PW160[data$PW160 %in% c(-1, 9, 99)] <- NA
+data$PW160 <- as.numeric(data$PW160)
+
+# PW190 – Trust
+data$PW190[data$PW190 %in% c(-1, 9, 99)] <- NA
+data$PW190 <- as.numeric(data$PW190)
+
+# PW040 – Accommodation (ordered)
+data$PW040_ord <- factor(
+  data$PW040,
+  levels = c(4, 2, 1, 3),
+  labels = c(
+    "family_worker",
+    "self_employed_no_employees",
+    "self_employed_with_employees",
+    "employee"
+  ),
+  ordered = TRUE
+)
+
+# PB190 – Marital status
+data$PB190[data$PB190 %in% c(-1, 9, 99)] <- NA
+data$PB190 <- as.numeric(data$PB190)
+
+# Rename variables
+data <- data %>%
+  rename(
+    Happiness = PW090_ord,
+    Job_satisfaction = PW100,
+    Personal_relationships = PW160,
+    Trust = PW190,
+    Accommodation = PW040_ord,
+    Marital_status = PB190
+  )
+
+# Complete cases
+data_happiness <- data %>%
+  select(
+    Happiness,
+    Job_satisfaction,
+    Personal_relationships,
+    Trust,
+    Accommodation,
+    Marital_status
+  ) %>%
+  na.omit()
+
+# Ordered probit model
+
+
+model_probit_happiness <- polr(
+  Happiness ~ Job_satisfaction + Personal_relationships + Trust +
+    Accommodation + Marital_status,
+  data = data_happiness,
+  method = "probit",
+  Hess = TRUE
+)
+
+summary(model_probit_happiness)
+
+# p-values
+(ctable <- coef(summary(model_probit_happiness)))
+p_values <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+cbind(ctable, "p value" = p_values)
+
+# Correlation check
+cor(
+  data_happiness[, c(
+    "Job_satisfaction",
+    "Personal_relationships",
+    "Trust",
+    "Marital_status"
+  )],
+  use = "complete.obs"
+)
 
 
 #model 3
@@ -278,3 +381,69 @@ vif(lm(
 
 
 #model 6
+# Cleaning variables
+
+# PW100 – Job satisfaction
+data$PW100[data$PW100 %in% c(-1, 9, 99)] <- NA
+data$PW100 <- as.numeric(data$PW100)
+
+# PL060 – Hours worked
+data$PL060[data$PL060 %in% c(-1, 9, 99)] <- NA
+data$PL060 <- as.numeric(data$PL060)
+
+# PL051 – Contract type
+data$PL051[data$PL051 %in% c(-1, 9, 99)] <- NA
+data$PL051 <- factor(
+  data$PL051,
+  levels = c(2, 1),
+  labels = c("Temporary", "Permanent")
+)
+
+# PW160 – Personal relationships
+data$PW160[data$PW160 %in% c(-1, 9, 99)] <- NA
+data$PW160 <- as.numeric(data$PW160)
+
+# PW190 – Trust
+data$PW190[data$PW190 %in% c(-1, 9, 99)] <- NA
+data$PW190 <- as.numeric(data$PW190)
+
+# PY021G – Company car
+data$PY021G[data$PY021G %in% c(-1, 9, 99)] <- NA
+data$PY021G <- factor(
+  data$PY021G,
+  levels = c(0, 1),
+  labels = c("No", "Yes")
+)
+data$PY021G <- droplevels(data$PY021G)
+
+# Data for model
+data_job <- data %>%
+  select(
+    PW100,
+    PL060,
+    PL051,
+    PW160,
+    PW190,
+    PY021G
+  ) %>%
+  na.omit()
+
+# OLS model
+
+model_job_satisfaction <- lm(
+  PW100 ~ PL060 + PL051 + PW160 + PW190 + PY021G,
+  data = data_job
+)
+
+summary(model_job_satisfaction)
+
+
+
+
+
+
+
+
+
+
+
