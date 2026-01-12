@@ -326,7 +326,80 @@ vif(lm(
 ))
 #zmienne (zdrowie, nastrój, pieniądze, region) są od siebie niezależne.
 
+#model 4
+str(data$PW070)
+table(data$PW070, useNA = "ifany")
+data$PW070[data$PW070 %in% c(8, 9, 99, -1)] <- NA
 
+data$PW070[data$PW070 == "NA"] <- NA
+data$PW070 <- as.numeric(data$PW070)
+data$PW070_rev <- 6 - data$PW070
+data$PW070_ord <- factor(
+  data$PW070_rev,
+  levels = 1:5,
+  ordered = TRUE)
+
+
+str(data$PW020)
+data$PW020[data$PW020 == "99"] <- NA
+data$PW020 <- as.numeric(data$PW020)
+data$PW020_ord <- factor(
+  data$PW020,
+  levels = 0:10,
+  ordered = TRUE)
+
+
+table(data$PW130, useNA = "ifany")
+data$PW130[data$PW130 %in% c("99", "NA", "")] <- NA
+data$PW130 <- as.numeric(data$PW130)
+data$PW130_ord <- factor(
+  data$PW130,
+  levels = 0:10,
+  ordered = TRUE)
+
+
+table(data$PW140, useNA = "ifany")
+data$PW140[data$PW140 %in% c("99", "NA", "")] <- NA
+data$PW140[data$PW140 %in% c("99", "NA", "")] <- NA
+data$PW140_ord <- factor(
+  data$PW140,
+  levels = 0:10,
+  ordered = TRUE)
+
+
+table(data$PW150, useNA = "ifany")
+data$PW150[data$PW150 %in% c("99", "NA", "")] <- NA
+data$PW150[data$PW150 %in% c("99", "NA", "")] <- NA
+data$PW150_ord <- factor(
+  data$PW150,
+  levels = 0:10,
+  ordered = TRUE)
+
+
+table(data$PW080)
+data$PW080[data$PW080 %in% c("9", "NA", "")] <- NA
+data$PW080 <- as.numeric(data$PW080)
+data$PW080_rev <- 6 - data$PW080
+data$PW080_ord <- factor(
+  data$PW080_rev,
+  levels = 1:5,
+  ordered = TRUE)
+
+
+
+library(MASS)
+model_probit4 <- polr(
+  PW070_ord ~ PW020_ord + PW130_ord + PW140_ord + PW150_ord + PW080_ord,
+  data = data,
+  method = "probit",
+  Hess = TRUE)
+
+summary(model_probit4)
+
+library(car)
+vif(lm(
+  as.numeric(PW070) ~ PW020 + PW130 + PW140  + PW150 + PW080,
+  data = data))
 
 #model 5
 #Model PW210 -> Satisfaction in living environment
