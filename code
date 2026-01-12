@@ -73,6 +73,7 @@ vif(lm(
 ))
 
 #model 2
+# PW090 ordered probit
 # Packages
 library(readxl)
 library(dplyr)
@@ -381,6 +382,7 @@ vif(lm(
 
 
 #model 6
+# (PW100) – OLS model
 # Cleaning variables
 
 # PW100 – Job satisfaction
