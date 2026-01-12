@@ -22,7 +22,7 @@ str(data$PL190)
 
 data$PW030[data$PW030 == 99] <- NA
 summary(data$PW030)
-table(data$PW030, useNA = "ifany")
+table(data$PW030)
 
 data$PW030_ord <- factor(
   data$PW030,
