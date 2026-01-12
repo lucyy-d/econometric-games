@@ -1,0 +1,71 @@
+#model 1 
+library(readxl)
+data <- read_excel("/Users/lucjadudzinska/Desktop/econometric-games.xlsx")
+
+data$PL040 <- factor(
+  data$PL040,
+  levels = c(3, 4, 2, 1),
+  labels = c(
+    "employee",
+    "family_worker",
+    "self_employed_no_employees",
+    "self_employed_with_employees"
+  )
+)
+str(data$PL040)
+
+data$PL040 <- relevel(data$PL040_fac, ref = "employee")
+
+data$PL190 <- as.numeric(data$PL190)
+str(data$PL190)
+
+
+data$PW030[data$PW030 == 99] <- NA
+summary(data$PW030)
+table(data$PW030, useNA = "ifany")
+
+data$PW030_ord <- factor(
+  data$PW030,
+  levels = 0:10,
+  labels = c(
+    "Not_at_all_satisfied",
+    "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "Completely_satisfied"
+  ),
+  ordered = TRUE
+)
+str(data$PW030_ord)
+
+
+data$PL015 <- factor(
+  data$PL015,
+  levels = c(2, 1),
+  labels = c("never_worked", "has_worked")
+)
+
+
+data$Region[data$Region == -1] <- NA
+data$Region[data$Region == "ITZZ"] <- NA
+
+data$Region <- factor(data$Region, ordered = FALSE)
+data$Region <- relevel(data$Region, ref = "ITG1")
+
+
+
+library(MASS)
+model_probit <- polr(
+  PW030_ord ~ PL040 + PL015 + PL190  + PB150 + Region,
+  data = data,
+  method = "probit",
+  Hess = TRUE
+)
+
+summary(model_probit)
+
+
+
+library(car)
+vif(lm(
+  as.numeric(PW030) ~ PL040 + PL015 + PL190 + PB150 + Region,
+  data = data
+))
