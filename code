@@ -1,3 +1,7 @@
+library(readxl)
+data <- read_excel("econometric.xlsx")
+
+
 #model 1 
 library(readxl)
 data <- read_excel("/Users/lucjadudzinska/Desktop/econometric-games.xlsx")
@@ -51,14 +55,12 @@ data$Region <- factor(data$Region, ordered = FALSE)
 data$Region <- relevel(data$Region, ref = "ITG1")
 
 
-
 library(MASS)
 model_probit <- polr(
   PW030_ord ~ PL040 + PL015 + PL190  + PB150 + Region,
   data = data,
   method = "probit",
-  Hess = TRUE
-)
+  Hess = TRUE)
 
 summary(model_probit)
 
@@ -69,3 +71,210 @@ vif(lm(
   as.numeric(PW030) ~ PL040 + PL015 + PL190 + PB150 + Region,
   data = data
 ))
+
+#model 2
+
+
+
+#model 3
+#Model PH010
+#PH010 -> GENERAL HEALTH
+data$PH010 <- as.numeric(data$PH010)
+str(data$PH010)
+
+data$ph010_ord <- factor(
+  data$PH010,
+  levels = c(1,2,3,4,5),
+  labels = c(
+    "very good", "good", "fair", "bad", "very bad"
+  ),
+  ordered = TRUE
+)
+
+table(data$PH010)
+
+#PH020 -> CHRONIC ILLNESS
+data$PH020 <- ifelse(data$PH020 == 1, 1, 0)
+
+#FAKTOR
+data$PH020 <- factor(data$PH020, 
+                     levels = c(0, 1), 
+                     labels = c("No", "Yes"))
+
+# Sprawdzenie wyniku
+str(data$PH020)
+table(data$PH020)
+
+
+#PH030 -> LIMITATION IN ACTIVITIES
+data$PH030_ord <- factor(
+  data$PL040,
+  levels = c(1,2,3),
+  labels = c(
+    "yes, strongly limited",
+    "yes, limited",
+    "no, not limited"
+  ),
+  ordered = TRUE
+)
+
+#Sprawdzenie wyniku
+table(data$PH030_ord)
+
+
+#PW160 -> SATISFACTION WITH PERSONAL RELATIONSHIPS
+#Najpierw upewniamy się, że to liczby
+data$PW160 <- as.numeric(as.character(data$PW160))
+#Zamieniamy 99 na NA
+data$PW160[data$PW160 == 99] <- NA
+data$pw160_ord <- factor(
+  data$PW160,
+  levels = 0:10,  # Skrót dla c(0, 1, 2, ..., 10)
+  ordered = TRUE
+)
+table(data$pw160_ord)
+
+#PW080 -> FEELING DEPRESSED
+# 1. Konwersja na numeric
+data$PW080 <- as.numeric(as.character(data$PW080))
+
+data$PW080[data$PW080 == 9] <- NA
+data$pw080_ord <- factor(
+  data$PW080,
+  levels = c(5, 4, 3, 2, 1),
+  labels = c(
+    "None of the time",
+    "A little of the time",
+    "Some of the time",
+    "Most of the time",
+    "All of the time"
+  ),
+  ordered = TRUE
+)
+
+table(data$pw080_ord)
+
+#PY030G -> EMPLOLYER'S SOCIAL INSURANCE
+data$PY030G <- as.numeric(data$PY030G)
+str(data$PY030G)
+#Zamiana 0 na NA
+data$PY030G[data$PY030G == 0] <- NA
+summary(data$PY030G)
+
+
+library(MASS)
+model_ord_1 <- polr(ph010_ord ~ PH020 + pw160_ord + pw080_ord + PY030G, 
+                  data = data, 
+                  Hess = TRUE)
+
+summary(model_ord_1)
+
+# 1. usuwamy wiersze z NA
+zmienne <- c("ph010_ord", "PH020", "PW160", "PW080", "PY030G")
+data_model <- data[complete.cases(data[, zmienne]), ]
+
+model_ord_1 <- polr(ph010_ord ~ PH020 + PW160 + PW080 + log(PY030G + 1), 
+                  data = data_model, 
+                  Hess = TRUE)
+
+summary(model_ord_1)
+
+ctable <- coef(summary(model_ord))
+ctable
+# Używamy rozkładu normalnego (pnorm)
+p_values <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable_with_p <- cbind(ctable, "p value" = round(p_values, 4))
+print(ctable_with_p)
+
+# Obliczanie Odds Ratios
+OR <- exp(coef(model_ord))
+OR
+
+#CHRONIC ILLNESS (PH020): Zwiększa szansę na gorsze zdrowie o 19% (najsilniejszy negatywny wpływ).
+#Nastrój (PW080): Poprawia ocenę zdrowia o 7,5% z każdym stopniem skali (najsilniejszy wpływ pozytywny).
+#Satisfaction (PW160): Każdy punkt na skali o 4,5% Zmniejsza szansa na złą samoocenę.
+#Pieniądze (PY030G): Wpływ nieistotny (brak realnego znaczenia dla wyniku).
+
+
+data$Region[data$Region == -1] <- NA
+data$Region[data$Region == "ITZZ"] <- NA
+
+data$Region <- factor(data$Region, ordered = FALSE)
+data$Region <- relevel(data$Region, ref = "ITG1")
+
+
+
+library(MASS)
+model_probit_x <- polr(
+  ph010_ord ~ PH020 + PW160 + PW080 + log(PY030G + 1) + Region,
+  data = data_model,
+  method = "probit",
+  Hess = TRUE
+)
+
+summary(model_probit_x)
+
+
+library(car)
+vif(lm(
+  as.numeric (ph010_ord) ~ PH020 + PW160 + PW080 + log(PY030G + 1) + Region,
+  data = data_model
+))
+#zmienne (zdrowie, nastrój, pieniądze, region) są od siebie niezależne.
+
+
+
+#model 5
+#Model PW210 -> Satisfaction in living environment
+#PW210 -> Satisfaction in living environment
+#Najpierw upewniamy się, że to liczby
+data$PW210 <- as.numeric(as.character(data$PW210))
+#Zamieniamy 99 na NA
+data$PW210[data$PW210 == 99] <- NA
+data$pw210_ord <- factor(
+  data$PW210,
+  levels = 0:10,  # Skrót dla c(0, 1, 2, ..., 10)
+  ordered = TRUE
+)
+table(data$pw210_ord)
+
+
+#PY200G -> Gross monthly earnings for employees
+data$PY200G <- as.numeric(as.character(data$PY200G))
+data$log_PY200G <- log(data$PY200G)
+
+summary(data$PY200G)
+summary(data$log_PY200G)
+
+
+
+#Wykluczanie NA
+zmienne_satysfakcja <- c("pw210_ord", "PY200G", "PY030G")
+data_sat <- data[complete.cases(data[, zmienne_satysfakcja]), ]
+
+# 2. Model: Satysfakcja z miejsca zamieszkania
+# Używamy log(PY200G) bo to realne zarobki respondenta
+model_sat <- polr(pw210_ord ~ log(PY200G)+ Region,
+                  data = data_sat, 
+                  Hess = TRUE)
+model_sat
+OR_sat <- exp(coef(model_sat))
+print(OR_sat)
+#Wzrost dochodów brutto o 1% zwiększa szansę na wyższą satysfakcję z otoczenia o ok. 0,8% (OR = 0.99). Wpływ pieniędzy na zadowolenie z okolicy jest obecny, ale bardzo mały.
+
+#Regiony (Największa satysfakcja): Miejsce zamieszkania ma kluczowe znaczenie. Największą szansę na wysoką satysfakcję (względem bazy) mają mieszkańcy regionów:
+#ITF4 (Molise): o ok. 23,5% większa szansa na wyższą satysfakcję (OR = 0.76).
+#ITF3 (Campania): o ok. 20,6% większa szansa na wyższą satysfakcję (OR = 0.79).
+#ITF2 (Abruzzo) i ITH2 (Trento): o ok. 19% większa szansa na wyższą satysfakcję (OR ≈ 0.81).
+#Regiony (Najniższa satysfakcja): Regiony takie jak ITF1 (Abruzzo) czy ITH4 (Friuli-Venezia Giulia) wykazują OR powyżej 1.00, co oznacza nieco niższą szansę na wysoką satysfakcję niż w regionie bazowym.
+
+library(car)
+vif(lm(
+  as.numeric (ph010_ord) ~ PH020 + PW160 + PW080 + log(PY030G + 1) + Region,
+  data = data_sat
+))
+
+#zmienne są od siebie niezależne.
+
+
+#model 6
